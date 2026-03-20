@@ -430,13 +430,13 @@ select.ship-sel{background:#fff;border:1px solid var(--border2);color:var(--text
       <div class="twrap">
         <table>
           <thead>
-            <tr>
-              <th>Kategorie</th>
-              <th>Anbieter</th>
-              <th>Mindestmenge</th>
-              <th>Lieferdauer</th>
-              <th>Kosten/kg</th>
-              <th>Zoll + MwSt (1.500€)</th>
+            <tr id="lief-header">
+              <th onclick="sortLief(0)" style="cursor:pointer">Kategorie &#8597;</th>
+              <th onclick="sortLief(1)" style="cursor:pointer">Anbieter &#8597;</th>
+              <th onclick="sortLief(2)" style="cursor:pointer">Mindestmenge &#8597;</th>
+              <th onclick="sortLief(3)" style="cursor:pointer">Lieferdauer &#8597;</th>
+              <th onclick="sortLief(4)" style="cursor:pointer">Kosten/kg &#8597;</th>
+              <th onclick="sortLief(5)" style="cursor:pointer">Zoll + MwSt &#8597;</th>
               <th>Bemerkungen</th>
             </tr>
           </thead>
@@ -685,6 +685,52 @@ function pAdd(){
     pRender();
   }).catch(function(e){console.error(e);});
 }
+function pUpdateLager(id,val){sbUpdate("products","id",id,{lager:val}).then(function(){pRender();});}
+function pDelete(id){if(!confirm("Produkt loschen?"))return;sbDelete("products","id",id).then(function(){pRender();});}
+function pRender(){
+  document.getElementById("p-table").innerHTML='<div class="loading"><div class="spinner"></div>Laden...</div>';
+  sbGet("products").then(function(all){
+    var shown=pFilter==="all"?all:all.filter(function(p){return p.lager===pFilter;});
+    document.getElementById("p-total").textContent=all.length;
+    document.getElementById("p-bestellt").textContent=all.filter(function(p){return p.lager==="bestellt";}).length;
+    document.getElementById("p-lager-de").textContent=all.filter(function(p){return p.lager==="de";}).length;
+    document.getElementById("p-lager-th").textContent=all.filter(function(p){return p.lager==="th";}).length;
+    if(!shown.length){
+      document.getElementById("p-table").innerHTML='<div class="empty"><div class="empty-ico">&#128230;</div><div class="empty-ttl">Keine Produkte</div><div class="empty-dsc">Fuge oben ein Produkt hinzu</div></div>';
+      return;
+    }
+    var rows = shown.map(function(p,i){
+      var preis=parseFloat(p.preis)||0, sons=parseFloat(p.sonstige)||0;
+      var lagerOptions = [
+        {v:"bestellt",l:"Bestellt"},
+        {v:"de",l:"Lager DE"},
+        {v:"th",l:"Lager TH"},
+        {v:"sold",l:"Verkauft"}
+      ].map(function(o){
+        return '<option value="'+o.v+'"'+(p.lager===o.v?' selected':'')+'>'+o.l+'</option>';
+      }).join("");
+      return '<tr>'
+        +'<td class="tmono" style="color:var(--muted)">'+(i+1)+'</td>'
+        +'<td><strong>'+(p.name||"-")+'</strong></td>'
+        +'<td>'+(p.kat?'<span class="badge badge-cat">'+p.kat+'</span>':"-")+'</td>'
+        +'<td class="tmono">'+(p.menge||"-")+'</td>'
+        +'<td class="tmono tred">'+(preis?preis.toFixed(2)+" EUR":"-")+'</td>'
+        +'<td class="tmono" style="color:var(--muted)">'+(sons?sons.toFixed(2)+" EUR":"-")+'</td>'
+        +'<td><select class="ship-sel" onchange="pUpdateLager(this.dataset.id,this.value)" data-id="'+p.id+'">'+lagerOptions+'</select></td>'
+        +'<td style="font-size:11px;color:var(--muted)">'+(p.datum||"-")+'</td>'
+        +'<td>'+(p.link?'<a href="'+p.link+'" target="_blank" style="color:var(--accent);font-size:11px">Link</a>':"-")+'</td>'
+        +'<td style="display:flex;gap:4px">'
+        +'<button class="btn btn-ghost btn-sm" onclick="pEdit(this.dataset.id)" data-id="'+p.id+'">&#9998;</button>'
+        +'<button class="btn btn-danger btn-sm" onclick="pDelete(this.dataset.id)" data-id="'+p.id+'">&#10005;</button>'
+        +'</td>'
+        +'</tr>';
+    });
+    document.getElementById("p-table").innerHTML='<div class="twrap"><table>'
+      +'<thead><tr><th>#</th><th>Produkt</th><th>Kat.</th><th>Menge</th><th>EK-Preis</th><th>Sonstige</th><th>Lager</th><th>Datum</th><th>Link</th><th></th></tr></thead>'
+      +'<tbody>'+rows.join("")+'</tbody></table></div>';
+  }).catch(function(e){console.error(e);});
+}
+
 function pUpdateLager(id,val){sbUpdate("products","id",id,{lager:val}).then(function(){pRender();});}
 function pDelete(id){if(!confirm("Produkt loschen?"))return;sbDelete("products","id",id).then(function(){pRender();});}
 function pRender(){
@@ -967,9 +1013,8 @@ function calcThbToEur(){
 var editProducts = [];
 function pEdit(id){
   sbGet("products").then(function(products){
-    editProducts = products;
-    var p = products.find(function(x){ return x.id === id; });
-    if(!p) return;
+    var p = products.find(function(x){ return String(x.id) === String(id); });
+    if(!p){ alert("Produkt nicht gefunden"); return; }
     document.getElementById("edit-id").value = p.id;
     document.getElementById("edit-name").value = p.name||"";
     document.getElementById("edit-kat").value = p.kat||"";
@@ -1001,6 +1046,24 @@ function pSaveEdit(){
     closeEditModal();
     pRender();
   });
+}
+
+// SORT LIEFERUNGEN
+var liefSortCol = -1;
+var liefSortDir = 1;
+function sortLief(col){
+  var table = document.querySelector("#page-lieferungen table");
+  if(!table) return;
+  var tbody = table.querySelector("tbody");
+  var rows = Array.from(tbody.querySelectorAll("tr"));
+  if(liefSortCol === col){ liefSortDir *= -1; } else { liefSortDir = 1; }
+  liefSortCol = col;
+  rows.sort(function(a,b){
+    var aText = a.cells[col] ? a.cells[col].textContent.trim() : "";
+    var bText = b.cells[col] ? b.cells[col].textContent.trim() : "";
+    return aText.localeCompare(bText, "de") * liefSortDir;
+  });
+  rows.forEach(function(r){ tbody.appendChild(r); });
 }
 
 // INIT
