@@ -629,29 +629,51 @@ function pRender(){
     document.getElementById("p-bestellt").textContent=all.filter(function(p){return p.lager==="bestellt";}).length;
     document.getElementById("p-lager-de").textContent=all.filter(function(p){return p.lager==="de";}).length;
     document.getElementById("p-lager-th").textContent=all.filter(function(p){return p.lager==="th";}).length;
-    if(!shown.length){document.getElementById("p-table").innerHTML='<div class="empty"><div class="empty-ico">&#128230;</div><div class="empty-ttl">Keine Produkte</div><div class="empty-dsc">Fuge oben ein Produkt hinzu</div></div>';return;}
-    var rows=shown.map(function(p,i){
-      var preis=parseFloat(p.preis)||0,sons=parseFloat(p.sonstige)||0;
-      return '<tr><td class="tmono" style="color:var(--muted)">'+(i+1)+'</td><td><strong>'+(p.name||"-")+'</strong></td>'
+    if(!shown.length){
+      document.getElementById("p-table").innerHTML='<div class="empty"><div class="empty-ico">X</div><div class="empty-ttl">Keine Produkte</div></div>';
+      return;
+    }
+    var tbody = document.createElement("tbody");
+    shown.forEach(function(p,i){
+      var preis=parseFloat(p.preis)||0, sons=parseFloat(p.sonstige)||0;
+      var tr = document.createElement("tr");
+      tr.innerHTML = '<td class="tmono" style="color:var(--muted)">'+(i+1)+'</td>'
+        +'<td><strong>'+(p.name||"-")+'</strong></td>'
         +'<td>'+(p.kat?'<span class="badge badge-cat">'+p.kat+'</span>':"-")+'</td>'
         +'<td class="tmono">'+(p.menge||"-")+'</td>'
         +'<td class="tmono tred">'+(preis?preis.toFixed(2)+" EUR":"-")+'</td>'
         +'<td class="tmono" style="color:var(--muted)">'+(sons?sons.toFixed(2)+" EUR":"-")+'</td>'
-        +'<td><select class="ship-sel" onchange="pUpdateLager(''+p.id+'',this.value)">'
-        +'<option value="bestellt"'+(p.lager==="bestellt"?" selected":"")+'">Bestellt</option>'
-        +'<option value="de"'+(p.lager==="de"?" selected":"")+'">Lager DE</option>'
-        +'<option value="th"'+(p.lager==="th"?" selected":"")+'">Lager TH</option>'
-        +'<option value="sold"'+(p.lager==="sold"?" selected":"")+'">Verkauft</option>'
-        +'</select></td>'
+        +'<td></td>'
         +'<td style="font-size:11px;color:var(--muted)">'+(p.datum||"-")+'</td>'
         +'<td>'+(p.link?'<a href="'+p.link+'" target="_blank" style="color:var(--accent);font-size:11px">Link</a>':"-")+'</td>'
-        +'<td><button class="btn btn-danger btn-sm" onclick="pDelete(''+p.id+'')">X</button></td></tr>';
+        +'<td></td>';
+      var sel = document.createElement("select");
+      sel.className = "ship-sel";
+      sel.onchange = (function(pid){ return function(){ pUpdateLager(pid, this.value); }; })(p.id);
+      [{v:"bestellt",l:"Bestellt"},{v:"de",l:"Lager DE"},{v:"th",l:"Lager TH"},{v:"sold",l:"Verkauft"}].forEach(function(item){
+        var opt = document.createElement("option");
+        opt.value = item.v; opt.textContent = item.l;
+        if(p.lager===item.v) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      tr.cells[6].appendChild(sel);
+      var btn = document.createElement("button");
+      btn.className = "btn btn-danger btn-sm";
+      btn.textContent = "X";
+      btn.onclick = (function(pid){ return function(){ pDelete(pid); }; })(p.id);
+      tr.cells[9].appendChild(btn);
+      tbody.appendChild(tr);
     });
-    document.getElementById("p-table").innerHTML='<div class="twrap"><table><thead><tr><th>#</th><th>Produkt</th><th>Kat.</th><th>Menge</th><th>EK-Preis</th><th>Sonstige</th><th>Lager</th><th>Datum</th><th>Link</th><th></th></tr></thead><tbody>'+rows.join("")+'</tbody></table></div>';
-  }).catch(function(e){console.error(e);});
+    var wrap = document.createElement("div");
+    wrap.className = "twrap";
+    var table = document.createElement("table");
+    table.innerHTML = '<thead><tr><th>#</th><th>Produkt</th><th>Kat.</th><th>Menge</th><th>EK-Preis</th><th>Sonstige</th><th>Lager</th><th>Datum</th><th>Link</th><th></th></tr></thead>';
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    document.getElementById("p-table").innerHTML = "";
+    document.getElementById("p-table").appendChild(wrap);
+  }).catch(function(e){console.error("pRender error:",e);});
 }
-
-// TODOS
 function tAdd(){
   var text=document.getElementById("t-text").value.trim();if(!text)return;
   sbInsert("todos",{id:Date.now(),text:text,prio:document.getElementById("t-prio").value,kat:document.getElementById("t-kat").value,done:false,datum:new Date().toLocaleDateString("de-DE")})
@@ -709,29 +731,47 @@ function lRender(){
     document.getElementById("l-arrived").textContent=ships.filter(function(s){return s.status==="angekommen";}).length;
     document.getElementById("l-problem").textContent=ships.filter(function(s){return s.status==="problem";}).length;
     var el=document.getElementById("l-list");
-    if(!ships.length){el.innerHTML='<div class="empty"><div class="empty-ico">&#128674;</div><div class="empty-ttl">Noch keine Sendungen</div></div>';return;}
-    el.innerHTML='<div style="display:flex;flex-direction:column;gap:9px">'+ships.map(function(s,i){
-      return '<div class="ship-card"><div class="ship-top">'
+    if(!ships.length){el.innerHTML='<div class="empty"><div class="empty-ico">X</div><div class="empty-ttl">Noch keine Sendungen</div></div>';return;}
+    var container = document.createElement("div");
+    container.style.cssText = "display:flex;flex-direction:column;gap:9px";
+    var statusLblMap = {geplant:"Geplant",unterwegs:"Unterwegs",angekommen:"Angekommen",problem:"Problem"};
+    ships.forEach(function(s,i){
+      var card = document.createElement("div");
+      card.className = "ship-card";
+      card.innerHTML = '<div class="ship-top">'
         +'<span class="ship-num">#'+(i+1)+'</span>'
         +'<span class="ship-name">'+s.name+'</span>'
-        +'<span class="badge s-'+s.status+'">'+(statusLbl[s.status]||s.status)+'</span>'
-        +'<select class="ship-sel" onchange="lUpdateStatus('+s.id+',this.value)">'
-        +'<option value="geplant"'+(s.status==="geplant"?" selected":"")+'>Geplant</option>'
-        +'<option value="unterwegs"'+(s.status==="unterwegs"?" selected":"")+'>Unterwegs</option>'
-        +'<option value="angekommen"'+(s.status==="angekommen"?" selected":"")+'>Angekommen</option>'
-        +'<option value="problem"'+(s.status==="problem"?" selected":"")+'>Problem</option>'
-        +'</select>'
-        +'<button class="btn btn-danger btn-sm" onclick="lDelete('+s.id+')">X</button>'
-        +'</div><div class="ship-meta">'
+        +'<span class="badge s-'+s.status+'">'+(statusLblMap[s.status]||s.status)+'</span>'
+        +'<span class="sel-placeholder"></span>'
+        +'<span class="btn-placeholder"></span>'
+        +'</div>'
+        +'<div class="ship-meta">'
         +'<div class="ship-meta-item">Datum: <span>'+(s.date||"-")+'</span></div>'
         +'<div class="ship-meta-item">Kosten: <span>'+(s.cost?parseFloat(s.cost).toFixed(2)+" EUR":"-")+'</span></div>'
         +(s.track?'<div class="ship-meta-item">Tracking: <span>'+s.track+'</span></div>':"")
         +(s.note?'<div class="ship-meta-item">Notiz: <span>'+s.note+'</span></div>':"")
-        +'</div></div>';
-    }).join("")+'</div>';
-  }).catch(function(e){console.error(e);});
+        +'</div>';
+      var sel = document.createElement("select");
+      sel.className = "ship-sel";
+      sel.onchange = (function(sid){ return function(){ lUpdateStatus(sid, this.value); }; })(s.id);
+      [{v:"geplant",l:"Geplant"},{v:"unterwegs",l:"Unterwegs"},{v:"angekommen",l:"Angekommen"},{v:"problem",l:"Problem"}].forEach(function(item){
+        var opt = document.createElement("option");
+        opt.value = item.v; opt.textContent = item.l;
+        if(s.status===item.v) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      card.querySelector(".sel-placeholder").replaceWith(sel);
+      var btn = document.createElement("button");
+      btn.className = "btn btn-danger btn-sm";
+      btn.textContent = "X";
+      btn.onclick = (function(sid){ return function(){ lDelete(sid); }; })(s.id);
+      card.querySelector(".btn-placeholder").replaceWith(btn);
+      container.appendChild(card);
+    });
+    el.innerHTML = "";
+    el.appendChild(container);
+  }).catch(function(e){console.error("lRender error:",e);});
 }
-
 // FINANZEN
 function fSaveKurs(){var v=parseFloat(document.getElementById("f-kurs").value);if(v>0){saveKurs(v);document.getElementById("f-kurs-hint").textContent="100 EUR = "+(v*100).toFixed(0)+" THB";}}
 function fRender(){var k=getKurs();document.getElementById("f-kurs").value=k.toFixed(2);document.getElementById("f-kurs-hint").textContent="100 EUR = "+(k*100).toFixed(0)+" THB";fRecalc();}
@@ -741,25 +781,46 @@ function fRecalc(){
     var finMap={};finRows.forEach(function(r){finMap[r.product_id]=r;});
     var kurs=parseFloat(document.getElementById("f-kurs").value)||38;
     var wrap=document.getElementById("f-table");
-    if(!products.length){wrap.innerHTML='<div class="empty"><div class="empty-ico">&#128184;</div><div class="empty-ttl">Noch keine Produkte</div></div>';return;}
+    if(!products.length){wrap.innerHTML='<div class="empty"><div class="empty-ico">X</div><div class="empty-ttl">Noch keine Produkte</div></div>';return;}
     var sumAus=0,sumVKThb=0,sumEinThb=0;
-    var rows=products.map(function(p){
-      var preis=parseFloat(p.preis)||0;sumAus+=preis;
+    var tbody = document.createElement("tbody");
+    products.forEach(function(p){
+      var preis=parseFloat(p.preis)||0; sumAus+=preis;
       var f=finMap[p.id]||{};
-      var vkThb=parseFloat(f.vk_thb)||0,einThb=parseFloat(f.einnahmen_thb)||0;
-      var vkEur=vkThb/kurs,einEur=einThb/kurs,profit=vkEur-preis;
-      sumVKThb+=vkThb;sumEinThb+=einThb;
+      var vkThb=parseFloat(f.vk_thb)||0, einThb=parseFloat(f.einnahmen_thb)||0;
+      var vkEur=vkThb/kurs, einEur=einThb/kurs, profit=vkEur-preis;
+      sumVKThb+=vkThb; sumEinThb+=einThb;
       var lb='<span class="badge '+(lagerClass[p.lager]||"")+'">'+(lagerLabel[p.lager]||p.lager||"-")+'</span>';
-      return '<tr><td><strong>'+(p.name||"-")+'</strong></td><td>'+lb+'</td>'
+      var tr = document.createElement("tr");
+      tr.innerHTML = '<td><strong>'+(p.name||"-")+'</strong></td>'
+        +'<td>'+lb+'</td>'
         +'<td class="tmono tred">'+preis.toFixed(2)+' EUR</td>'
-        +'<td><input type="number" step="1" value="'+(vkThb||"")+'" placeholder="VK THB" style="background:#fff;border:1px solid var(--border2);font-family:var(--mono);font-size:12px;padding:5px 8px;border-radius:7px;width:100px;outline:none" onchange="fSaveVK(''+p.id+'','vk_thb',this.value)"></td>'
-        +'<td><input type="number" step="1" value="'+(einThb||"")+'" placeholder="Einnahmen THB" style="background:#fff;border:1px solid var(--border2);font-family:var(--mono);font-size:12px;padding:5px 8px;border-radius:7px;width:120px;outline:none" onchange="fSaveVK(''+p.id+'','einnahmen_thb',this.value)"></td>'
+        +'<td></td>'
+        +'<td></td>'
         +'<td class="tmono tgreen">'+(vkThb?vkEur.toFixed(2)+" EUR":"-")+'</td>'
         +'<td class="tmono '+(profit>0?"tgreen":"tred")+'">'+(vkThb?profit.toFixed(2)+" EUR":"-")+'</td>'
-        +'<td class="tmono tgold">'+(einThb?einEur.toFixed(2)+" EUR":"-")+'</td></tr>';
+        +'<td class="tmono tgold">'+(einThb?einEur.toFixed(2)+" EUR":"-")+'</td>';
+      var vkInput = document.createElement("input");
+      vkInput.type="number"; vkInput.step="1"; vkInput.value=vkThb||""; vkInput.placeholder="VK THB";
+      vkInput.style.cssText="background:#fff;border:1px solid var(--border2);font-family:var(--mono);font-size:12px;padding:5px 8px;border-radius:7px;width:100px;outline:none";
+      vkInput.onchange = (function(pid){ return function(){ fSaveVK(pid,"vk_thb",this.value); }; })(p.id);
+      tr.cells[3].appendChild(vkInput);
+      var einInput = document.createElement("input");
+      einInput.type="number"; einInput.step="1"; einInput.value=einThb||""; einInput.placeholder="Einnahmen THB";
+      einInput.style.cssText="background:#fff;border:1px solid var(--border2);font-family:var(--mono);font-size:12px;padding:5px 8px;border-radius:7px;width:120px;outline:none";
+      einInput.onchange = (function(pid){ return function(){ fSaveVK(pid,"einnahmen_thb",this.value); }; })(p.id);
+      tr.cells[4].appendChild(einInput);
+      tbody.appendChild(tr);
     });
-    wrap.innerHTML='<div class="twrap"><table><thead><tr><th>Produkt</th><th>Lager</th><th>EK</th><th>VK (THB)</th><th>Einnahmen (THB)</th><th>VK (EUR)</th><th>Erw. Gewinn</th><th>Einnahmen (EUR)</th></tr></thead><tbody>'+rows.join("")+'</tbody></table></div>';
-    var sumInv=sumAus,sumVKEur=sumVKThb/kurs,sumEinEur=sumEinThb/kurs,sumProfit=sumVKEur-sumInv;
+    var twrap = document.createElement("div");
+    twrap.className = "twrap";
+    var table = document.createElement("table");
+    table.innerHTML = '<thead><tr><th>Produkt</th><th>Lager</th><th>EK</th><th>VK (THB)</th><th>Einnahmen (THB)</th><th>VK (EUR)</th><th>Erw. Gewinn</th><th>Einnahmen (EUR)</th></tr></thead>';
+    table.appendChild(tbody);
+    twrap.appendChild(table);
+    wrap.innerHTML = "";
+    wrap.appendChild(twrap);
+    var sumInv=sumAus, sumVKEur=sumVKThb/kurs, sumEinEur=sumEinThb/kurs, sumProfit=sumVKEur-sumInv;
     var roi=sumInv>0?((sumProfit/sumInv)*100).toFixed(1):"-";
     document.getElementById("f-ausgaben").textContent=sumInv.toFixed(2)+" EUR";
     document.getElementById("f-gewinn").textContent=sumVKThb?sumProfit.toFixed(2)+" EUR":"-";
@@ -772,7 +833,7 @@ function fRecalc(){
     document.getElementById("f-s-ein-eur").textContent=sumEinThb?sumEinEur.toFixed(2)+" EUR":"-";
     document.getElementById("f-s-profit").textContent=sumVKThb?sumProfit.toFixed(2)+" EUR":"-";
     document.getElementById("f-s-roi").textContent=sumVKThb&&sumInv?roi+"%":"-";
-  }).catch(function(e){console.error(e);});
+  }).catch(function(e){console.error("fRecalc error:",e);});
 }
 function fSaveVK(id,field,val){
   var data={product_id:id};data[field]=parseFloat(val)||0;
