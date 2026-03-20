@@ -194,6 +194,7 @@ select.ship-sel{background:#fff;border:1px solid var(--border2);color:var(--text
         <button class="dd-item"        id="nav-logistik"    onclick="goTo('logistik')">&#128674; Logistik</button>
         <button class="dd-item"        id="nav-finanzen"    onclick="goTo('finanzen')">&#128184; Finanzen</button>
         <button class="dd-item"        id="nav-performance" onclick="goTo('performance')">&#128202; Performance</button>
+        <button class="dd-item"        id="nav-lieferungen" onclick="goTo('lieferungen')">&#128666; Lieferungen</button>
       </div>
     </div>
     <div class="live-pill"><div class="live-dot"></div>Live</div>
@@ -217,6 +218,22 @@ select.ship-sel{background:#fff;border:1px solid var(--border2);color:var(--text
       <div class="rate-big" id="rate-val">...</div>
       <div class="rate-sub">1 Euro = <span id="rate-thb">...</span> Thai Baht</div>
       <div class="rate-change" id="rate-change">Wird geladen...</div>
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <input id="ov-eur-input" type="number" step="0.01" placeholder="EUR eingeben" 
+            style="padding:7px 10px;border-radius:8px;border:none;background:rgba(255,255,255,.2);color:#fff;font-family:var(--mono);font-size:13px;width:130px;outline:none"
+            oninput="calcEurToThb()">
+          <span style="font-size:12px;opacity:.7">EUR =</span>
+          <span id="ov-thb-result" style="font-size:16px;font-weight:800">— THB</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <input id="ov-thb-input" type="number" step="1" placeholder="THB eingeben" 
+            style="padding:7px 10px;border-radius:8px;border:none;background:rgba(255,255,255,.2);color:#fff;font-family:var(--mono);font-size:13px;width:130px;outline:none"
+            oninput="calcThbToEur()">
+          <span style="font-size:12px;opacity:.7">THB =</span>
+          <span id="ov-eur-result" style="font-size:16px;font-weight:800">— EUR</span>
+        </div>
+      </div>
       <div class="rate-chart-box"><canvas id="rateChart"></canvas></div>
       <div class="rate-update" id="rate-update">Aktualisierung alle 5 Minuten</div>
     </div>
@@ -398,6 +415,55 @@ select.ship-sel{background:#fff;border:1px solid var(--border2);color:var(--text
   <div class="widget">
     <div class="whead"><div class="wtitle"><div class="wico gold">&#127942;</div>Nach Einkaufspreis</div></div>
     <div class="wbody tight"><div id="perf-top"><div class="loading"><div class="spinner"></div>Laden...</div></div></div>
+  </div>
+</div>
+
+
+<!-- LIEFERUNGEN -->
+<div class="page" id="page-lieferungen">
+  <div class="page-title"><h2>&#128666; Versand &amp; Lieferungen</h2><p>Übersicht aller Versandoptionen DE &#8594; Thailand</p></div>
+  
+  <div class="sec">Versandoptionen im Vergleich</div>
+  <div class="widget">
+    <div class="whead"><div class="wtitle"><div class="wico gold">&#128666;</div>Alle Versandarten</div></div>
+    <div class="wbody tight">
+      <div class="twrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Kategorie</th>
+              <th>Anbieter</th>
+              <th>Mindestmenge</th>
+              <th>Lieferdauer</th>
+              <th>Kosten/kg</th>
+              <th>Zoll + MwSt (1.500€)</th>
+              <th>Bemerkungen</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background:#fffbeb"><td><span class="badge badge-bestellt">Express/Paket</span></td><td><strong>DHL Paket</strong></td><td>0,5 kg</td><td>7–12 Tage</td><td class="tmono tred">10–20 €</td><td class="tmono tgold">~265 €</td><td style="font-size:11px;color:var(--muted)">Gut für kleine Pakete, teuer bei höherem Wert</td></tr>
+            <tr style="background:#fffbeb"><td><span class="badge badge-bestellt">Express/Paket</span></td><td><strong>DHL Express</strong></td><td>0,5 kg</td><td>2–5 Tage</td><td class="tmono tred">20–40 €</td><td class="tmono tgold">~265 €</td><td style="font-size:11px;color:var(--muted)">Schnell, teuer, Versicherung bis 500€, extra möglich</td></tr>
+            <tr style="background:#fffbeb"><td><span class="badge badge-bestellt">Express/Paket</span></td><td><strong>UPS</strong></td><td>0,5 kg</td><td>3–6 Tage</td><td class="tmono tred">15–35 €</td><td class="tmono tgold">~265 €</td><td style="font-size:11px;color:var(--muted)">Schnelle Lieferung, Einzelverzollung</td></tr>
+            <tr style="background:#fffbeb"><td><span class="badge badge-bestellt">Express/Paket</span></td><td><strong>FedEx</strong></td><td>0,5 kg</td><td>3–6 Tage</td><td class="tmono tred">15–35 €</td><td class="tmono tgold">~265 €</td><td style="font-size:11px;color:var(--muted)">Schnelle Lieferung, Einzelverzollung</td></tr>
+            <tr style="background:#eff6ff"><td><span class="badge badge-de">Luftfracht</span></td><td><strong>Bulk Air Freight</strong></td><td>ab 20–50 kg</td><td>4–8 Tage</td><td class="tmono tgreen">3–6 €</td><td class="tmono tgold">150–265 €</td><td style="font-size:11px;color:var(--muted)">B2B Standard, viel günstiger als DHL für große Mengen</td></tr>
+            <tr style="background:#eff6ff"><td><span class="badge badge-de">Luftfracht</span></td><td><strong>Air Freight Premium</strong></td><td>ab 10 kg</td><td>3–5 Tage</td><td class="tmono">6–12 €</td><td class="tmono tgold">150–265 €</td><td style="font-size:11px;color:var(--muted)">Schneller, teurer als Standard-Luftfracht</td></tr>
+            <tr style="background:#eff6ff"><td><span class="badge badge-de">Luftfracht</span></td><td><strong>Express Air Cargo</strong></td><td>ab 1 kg</td><td>2–4 Tage</td><td class="tmono">10–15 €</td><td class="tmono tgold">150–265 €</td><td style="font-size:11px;color:var(--muted)">Fast wie Paketdienst, meist günstiger für 5–20 kg</td></tr>
+            <tr style="background:#f0fdf4"><td><span class="badge badge-th">Seefracht LCL</span></td><td><strong>LCL Standard</strong></td><td>ab 1 m³</td><td>25–40 Tage</td><td class="tmono tgreen">0,42–0,50 €/kg</td><td class="tmono tgold">150–265 €</td><td style="font-size:11px;color:var(--muted)">Langsam, günstig, ideal für große Mengen</td></tr>
+            <tr style="background:#f0fdf4"><td><span class="badge badge-th">Seefracht LCL</span></td><td><strong>LCL nach Gewicht</strong></td><td>ab 300 kg</td><td>30–45 Tage</td><td class="tmono tgreen">0,42–0,50 €/kg</td><td class="tmono tgold">150–265 €</td><td style="font-size:11px;color:var(--muted)">Sammelcontainer, oft pauschale Zollabwicklung</td></tr>
+            <tr style="background:#f0fdf4"><td><span class="badge badge-th">Seefracht FCL</span></td><td><strong>20ft Container</strong></td><td>~10–15 m³</td><td>30–40 Tage</td><td class="tmono tgreen">~0,15 €/kg</td><td class="tmono tgold">150–265 €</td><td style="font-size:11px;color:var(--muted)">Günstigster Preis/kg bei großen Mengen</td></tr>
+            <tr style="background:#f0fdf4"><td><span class="badge badge-th">Seefracht FCL</span></td><td><strong>40ft Container</strong></td><td>~25–30 m³</td><td>30–40 Tage</td><td class="tmono tgreen">0,10–0,15 €/kg</td><td class="tmono tgold">150–265 €</td><td style="font-size:11px;color:var(--muted)">Große Ladungen, sehr günstig pro kg</td></tr>
+            <tr style="background:#faf5ff"><td><span class="badge badge-manual">Cargo/Sammel</span></td><td><strong>Thailand Cargo Service</strong></td><td>ab 5–10 kg</td><td>2–5 Wochen</td><td class="tmono">5–10 €</td><td class="tmono tgold">100–200 €</td><td style="font-size:11px;color:var(--muted)">Inkl. Zollabwicklung möglich, beliebt bei Händlern</td></tr>
+            <tr style="background:#faf5ff"><td><span class="badge badge-manual">Cargo/Sammel</span></td><td><strong>Door-to-Door Cargo</strong></td><td>ab 10 kg</td><td>3–6 Wochen</td><td class="tmono">6–12 €</td><td class="tmono tgold">100–200 €</td><td style="font-size:11px;color:var(--muted)">Paket wird gesammelt verschickt, Zoll oft pauschal</td></tr>
+            <tr style="background:#faf5ff"><td><span class="badge badge-manual">Cargo/Sammel</span></td><td><strong>DDP Cargo (inkl. Zoll)</strong></td><td>ab 10–20 kg</td><td>2–4 Wochen</td><td class="tmono">8–15 €</td><td class="tmono tgreen">inkl. Zoll</td><td style="font-size:11px;color:var(--muted)">Keine Extra-Zahlung für Zoll, meist B2B</td></tr>
+            <tr style="background:#fff1f2"><td><span class="badge badge-sold">Umzug</span></td><td><strong>Umzugsfirma Seefracht</strong></td><td>ab 1–2 m³</td><td>4–8 Wochen</td><td class="tmono tred">2.000–3.000 € total</td><td class="tmono">0–150 €</td><td style="font-size:11px;color:var(--muted)">Nur für private Sachen, teuer für Handel</td></tr>
+            <tr style="background:#fff1f2"><td><span class="badge badge-sold">Umzug</span></td><td><strong>Air Relocation</strong></td><td>ab 100 kg</td><td>1–3 Wochen</td><td class="tmono tred">sehr teuer</td><td class="tmono">0–150 €</td><td style="font-size:11px;color:var(--muted)">Schnelle Option für persönliche Gegenstände</td></tr>
+            <tr><td><span class="badge badge-cat">Alternative</span></td><td><strong>Fluggepäck</strong></td><td>keine</td><td>1–2 Tage</td><td class="tmono tgreen">5–15 €</td><td class="tmono">0–50 €</td><td style="font-size:11px;color:var(--muted)">Oft günstig, limitiert auf 20–30 kg</td></tr>
+            <tr><td><span class="badge badge-cat">Alternative</span></td><td><strong>Mitnahme durch Reisende</strong></td><td>keine</td><td>flexibel</td><td class="tmono">abhängig</td><td class="tmono">abhängig</td><td style="font-size:11px;color:var(--muted)">Risiko &amp; legal beachten</td></tr>
+            <tr><td><span class="badge badge-cat">Alternative</span></td><td><strong>Dropshipping (Asien)</strong></td><td>keine</td><td>5–12 Tage</td><td class="tmono tgreen">2–8 €</td><td class="tmono">0–150 €</td><td style="font-size:11px;color:var(--muted)">Versand direkt an Kunden, Zoll oft vom Lieferanten</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -885,8 +951,89 @@ function perfRender(){
   }).catch(function(e){console.error(e);});
 }
 
+// CALC EUR <-> THB
+function calcEurToThb(){
+  var eur = parseFloat(document.getElementById("ov-eur-input").value)||0;
+  var kurs = getKurs();
+  document.getElementById("ov-thb-result").textContent = eur ? (eur*kurs).toFixed(0)+" THB" : "— THB";
+}
+function calcThbToEur(){
+  var thb = parseFloat(document.getElementById("ov-thb-input").value)||0;
+  var kurs = getKurs();
+  document.getElementById("ov-eur-result").textContent = thb ? (thb/kurs).toFixed(2)+" EUR" : "— EUR";
+}
+
+// EDIT PRODUKT
+var editProducts = [];
+function pEdit(id){
+  sbGet("products").then(function(products){
+    editProducts = products;
+    var p = products.find(function(x){ return x.id === id; });
+    if(!p) return;
+    document.getElementById("edit-id").value = p.id;
+    document.getElementById("edit-name").value = p.name||"";
+    document.getElementById("edit-kat").value = p.kat||"";
+    document.getElementById("edit-menge").value = p.menge||"1";
+    document.getElementById("edit-preis").value = p.preis||"";
+    document.getElementById("edit-sonstige").value = p.sonstige||"";
+    document.getElementById("edit-lager").value = p.lager||"bestellt";
+    document.getElementById("edit-link").value = p.link||"";
+    document.getElementById("editModal").classList.add("open");
+  });
+}
+function closeEditModal(){ document.getElementById("editModal").classList.remove("open"); }
+function pSaveEdit(){
+  var id = document.getElementById("edit-id").value;
+  var name = document.getElementById("edit-name").value.trim();
+  var preis = document.getElementById("edit-preis").value.trim();
+  if(!name){ alert("Produktname ist Pflicht"); return; }
+  if(!preis){ alert("Einkaufspreis ist Pflicht"); return; }
+  var updates = {
+    name: name,
+    kat: document.getElementById("edit-kat").value.trim(),
+    menge: document.getElementById("edit-menge").value.trim()||"1",
+    preis: preis,
+    sonstige: document.getElementById("edit-sonstige").value.trim(),
+    lager: document.getElementById("edit-lager").value,
+    link: document.getElementById("edit-link").value.trim()
+  };
+  sbUpdate("products","id",id,updates).then(function(){
+    closeEditModal();
+    pRender();
+  });
+}
+
 // INIT
 renderOverview();
 </script>
+
+<!-- MODAL EDIT PRODUKT -->
+<div class="modal-bg" id="editModal" onclick="if(event.target===this)closeEditModal()">
+  <div class="modal">
+    <h3>&#9998; Produkt bearbeiten</h3>
+    <input type="hidden" id="edit-id">
+    <div class="form-grid">
+      <div class="fg" style="grid-column:span 2"><label>Produktname *</label><input id="edit-name" placeholder="z.B. Pokemon Booster Box"></div>
+      <div class="fg"><label>Kategorie</label><input id="edit-kat" placeholder="z.B. Pokemon"></div>
+      <div class="fg"><label>Menge</label><input id="edit-menge" type="number" min="1" placeholder="1"></div>
+      <div class="fg"><label>Einkaufspreis (EUR) *</label><input id="edit-preis" type="number" step="0.01" placeholder="0.00"><span class="hint-label">Lieferkosten inklusive!</span></div>
+      <div class="fg"><label>Sonstige Kosten (EUR)</label><input id="edit-sonstige" type="number" step="0.01" placeholder="0.00"><span class="hint-label">Nur Info</span></div>
+      <div class="fg"><label>Lager-Status</label>
+        <select id="edit-lager">
+          <option value="bestellt">Bestellt (auf dem Weg)</option>
+          <option value="de">Lager Deutschland</option>
+          <option value="th">Lager Thailand</option>
+          <option value="sold">Verkauft</option>
+        </select>
+      </div>
+      <div class="fg" style="grid-column:span 2"><label>Cardmarket-Link</label><input id="edit-link" placeholder="https://www.cardmarket.com/..."></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeEditModal()">Abbrechen</button>
+      <button class="btn btn-primary" onclick="pSaveEdit()">Speichern</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
